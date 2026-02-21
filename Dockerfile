@@ -30,15 +30,26 @@ RUN apt-get update && \
 RUN ln -sf /usr/bin/python3 /usr/local/bin/python
 
 # BEGIN Install Homebrew: let you install skill via openclaw cli
-RUN /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-# Add Homebrew to the PATH
-ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
-# create group homebrew and add user node to it
-RUN groupadd homebrew && usermod -aG homebrew node
-# change group of /home/linuxbrew/.linuxbrew to homebrew
-RUN chown -R root:homebrew /home/linuxbrew/.linuxbrew && chmod -R g+w /home/linuxbrew/.linuxbrew
-# END Install Homebrew
 
-# DO NOT upgrade system pip on Debian (PEP 668). Use venv at runtime.
+# 1) Prepare install dir as root
+USER root
+RUN mkdir -p /home/linuxbrew/.linuxbrew \
+ && chown -R node:node /home/linuxbrew
+
+# 2) Install Homebrew as non-root user (node)
+USER node
+ENV NONINTERACTIVE=1
+RUN /bin/bash -lc "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 3) Add Homebrew to PATH (for subsequent layers)
+ENV PATH="/home/linuxbrew/.linuxbrew/bin:/home/linuxbrew/.linuxbrew/sbin:${PATH}"
+
+# 4) Optional: allow node to manage brew dirs without permission hell
+USER root
+RUN groupadd -f homebrew \
+ && usermod -aG homebrew node \
+ && chown -R node:homebrew /home/linuxbrew/.linuxbrew \
+ && chmod -R g+w /home/linuxbrew/.linuxbrew
 
 USER node
+# END Install Homebrew
