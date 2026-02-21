@@ -17,6 +17,15 @@ RUN apt-get update \
      #python3-whisper \
  && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && \
+      DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends xvfb && \
+      mkdir -p /home/node/.cache/ms-playwright && \
+      PLAYWRIGHT_BROWSERS_PATH=/home/node/.cache/ms-playwright \
+      node /app/node_modules/playwright-core/cli.js install --with-deps chromium && \
+      chown -R node:node /home/node/.cache/ms-playwright && \
+      apt-get clean && \
+      rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*;
+
 # Some tooling expects `python`
 RUN ln -sf /usr/bin/python3 /usr/local/bin/python
 
