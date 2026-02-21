@@ -67,7 +67,7 @@ paste code it provide
 =>  18789
 
 ◇  Gateway bind
-=>  LAN (0.0.0.0)
+=>  local (127.0.0.1)
 
 ◇  Gateway auth
 =>  Token

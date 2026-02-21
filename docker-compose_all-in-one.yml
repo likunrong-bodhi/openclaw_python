@@ -13,8 +13,8 @@ services:
       - ${OPENCLAW_DATA_DIR}:/home/node/.openclaw
       - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
     ports:
-      - "${OPENCLAW_PRIMARY_PORT}:18789"
-      - "${OPENCLAW_SECONDARY_PORT}:18790"
+      - "127.0.0.1:${OPENCLAW_PRIMARY_PORT}:18789"
+      - "127.0.0.1:${OPENCLAW_SECONDARY_PORT}:18790"
     environment:
       - NODE_ENV=production
       - OPENCLAW_SKIP_SERVICE_CHECK=true
@@ -32,7 +32,7 @@ services:
     container_name: openclaw-socat
     restart: unless-stopped
     network_mode: "service:openclaw-gateway"
-    command: "TCP-LISTEN:${OPENCLAW_SECONDARY_PORT},fork,bind=0.0.0.0,reuseaddr TCP:127.0.0.1:${OPENCLAW_PRIMARY_PORT}"
+    command: "TCP-LISTEN:${OPENCLAW_SECONDARY_PORT},fork,bind=127.0.0.1,reuseaddr TCP:127.0.0.1:${OPENCLAW_PRIMARY_PORT}"
 
   openclaw-cli:
     build: .
