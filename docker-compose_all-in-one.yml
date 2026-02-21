@@ -1,0 +1,57 @@
+services:
+  openclaw-gateway:
+    build: .
+    # build:
+    #   context: <contextPath>
+    #   dockerfile: <Dockerfile name>
+    image: openclaw-python:latest
+    container_name: openclaw-gateway
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    volumes:
+      - ${OPENCLAW_DATA_DIR}:/home/node/.openclaw
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+    ports:
+      - "${OPENCLAW_PRIMARY_PORT}:18789"
+      - "${OPENCLAW_SECONDARY_PORT}:18790"
+    environment:
+      - NODE_ENV=production
+      - OPENCLAW_SKIP_SERVICE_CHECK=true
+    command: ["gateway"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+  socat-proxy:
+    image: alpine/socat
+    container_name: openclaw-socat
+    restart: unless-stopped
+    network_mode: "service:openclaw-gateway"
+    command: "TCP-LISTEN:${OPENCLAW_SECONDARY_PORT},fork,bind=0.0.0.0,reuseaddr TCP:127.0.0.1:${OPENCLAW_PRIMARY_PORT}"
+
+  openclaw-cli:
+    build: .
+    image: openclaw-python:latest
+    container_name: openclaw-cli
+    stdin_open: true
+    tty: true
+    volumes:
+      - ${OPENCLAW_DATA_DIR}:/home/node/.openclaw
+      - ${OPENCLAW_WORKSPACE_DIR}:/home/node/.openclaw/workspace
+    environment:
+      - NODE_ENV=production
+    entrypoint: ["node", "/app/dist/index.js"]
+    profiles:
+      - cli
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
