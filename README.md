@@ -124,6 +124,103 @@ paste code it provide
 
 http://localhost:18789/?token=<token>
 
+## openclaw.json
+- 預設在 _openclaw\data\openclaw.json
+- docker 內的路徑是 /home/node/.openclaw/openclaw.json
+
+### Telegram setting
+Agent 需要加上專門處理 telegram 的 agent 
+```bat
+openclaw agents add telegram-agent --workspace ~/.openclaw/workspace-telegram-agent
+```
+
+會生成新的 agent，建議調整一些設定 
+
+telegram-agent 不需要擔心，不過 main 最好加上 default: true
+```json
+"agents": {
+  "list": [
+    {
+      "id": "main",
+      "default": true
+    },
+    {
+      "id": "telegram-agent",
+      "name": "telegram-agent",
+      "workspace": "/home/node/.openclaw/workspace-telegram-agent",
+      "agentDir": "/home/node/.openclaw/agents/telegram-agent/agent"
+    }
+  ]
+}
+```
+
+因為所有的 telegram 訊息都要傳到 `telegram-agent`，所以我們 telegram 設定單一 bot 資料
+
+另外 bindings 時也不處理 accountid
+
+這樣就可以把所有 telegram 的訊息傳進 `telegram-agent`
+```json
+  "bindings": [
+    {
+      "agentId": "telegram-agent",
+      "match": { "channel": "telegram" }
+    }
+  ],
+  "channels": {
+    "telegram": {
+      "enabled": true,
+      "dmPolicy": "open",
+      "allowFrom": ["*"],
+      "botToken": "<token>",
+      "streamMode": "partial"
+    }
+  }
+```
+
+"streamMode" partial 就 chatgpt 所說，有時會產生重複的對話，可以改成 "final" 避免。
+```
+Chatgpt: If you see duplicate or choppy edits in Telegram messages, switch to "final".
+```
+
+如果有多個 telegram bot，需要分開設定
+```json
+"agents": {
+  "list": [
+    {
+      "id": "main",
+      "default": true
+    },
+    {
+      "id": "<agentId>",
+      "name": "<name>",
+      "workspace": "<workspace path>",
+      "agentDir": "<agent dir path>"
+    }
+  ]
+}
+"bindings": [
+  {
+    "agentId": "<agentId 在 agent.list 中>",
+    "match": {
+      "channel": "telegram",
+      "accountId": "<accountId 在 channels.telegram.accounts 中>"
+    }
+  }
+],
+"channels": {
+  "telegram": {
+    "enabled": true,
+    "accounts": {
+      "<accountId>": {
+        "botToken": "<bot 的 token>",
+        "dmPolicy": "open",
+        "allowFrom": ["*"]
+      }
+    }
+  }
+}
+```
+
 ## Skill
 - [Openclaw guide](https://docs.openclaw.ai/tools/skills#skills)
 - [ChatGPT 問答](https://chatgpt.com/c/6985afc5-fb3c-83a5-8652-420372e44437)
@@ -219,7 +316,9 @@ python -m scripts/run_local --in <input.wav> --gain-db 6 --highpass-hz 80
 ```
 openclaw agents add <agentname> --workspace <dir>
 ```
-建議使用 ~/.openclaw/workspace-<agentname>
+建議使用 ~/.openclaw/workspace-<agentname> 做為 workspace
+
+每一個 Agent 都會另外建一個自己的 git repo，方便單獨管理
 
 預設建立下列檔案
 - .git: git repo
@@ -231,4 +330,12 @@ openclaw agents add <agentname> --workspace <dir>
 - TOOLS.md: bot 學習並可以使用的工具 SKILL 等
 - USER.md: bot 服務的對象資料
 
-除了 AGENTS.md 以外，其它都可以任意刪除
+它主要讀取 AGENTS.md 其它的可以不用，不過刪除後會自動再生。
+
+### telegram-agent
+- AGENTS.md 為 customer_AGENTS_20260224.md
+- 需要 FAQS.md 處理 faq
+- 需要 PRODUCTLIST.md 處理產品資訊
+- 會把它無法處理的問題放進 <workspace>/pending-issue/{userid}.md
+
+[Chatgpt 調整記錄](https://chatgpt.com/share/699d67d3-1a88-8009-bdca-4753697b51b2)
